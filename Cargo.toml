@@ -1,0 +1,15 @@
+[package]
+name = "tiny-lsm"
+version = "0.1.0"
+edition = "2024"
+description = "A tiny LSM-tree storage engine, built step by step while learning Rust"
+license = "MIT"
+authors = ["Pritam Ghosh"]
+repository = "https://github.com/blueRonyHazard/tiny-lsm"
+
+[lib]
+name = "tiny_lsm"
+
+# No dependencies on purpose: everything (even the checksum) is written by hand
+# so the whole engine can be read and understood in one sitting.
+[dependencies]
