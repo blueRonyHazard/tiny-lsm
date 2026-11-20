@@ -25,7 +25,7 @@
 use crate::crc32::Crc32;
 use crate::error::{Error, Result};
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 const HEADER_LEN: usize = 4 + 1 + 4 + 4;
@@ -59,10 +59,14 @@ impl Wal {
     /// Open (or create) the log at `path`, replay what is in it, and return
     /// the log ready for appending together with the replayed records.
     pub fn open(path: &Path, sync: bool) -> Result<(Wal, Replay)> {
+        // Not `.append(true)`: on Windows an append-only handle may not be
+        // truncated, and we need `set_len` below. Instead we open for normal
+        // writing and seek to the end ourselves. (CI on Windows caught this.)
         let mut file = OpenOptions::new()
             .read(true)
-            .append(true)
+            .write(true)
             .create(true)
+            .truncate(false)
             .open(path)?;
 
         let mut bytes = Vec::new();
@@ -75,6 +79,8 @@ impl Wal {
             file.set_len(good_len as u64)?;
             file.sync_all()?;
         }
+        // We are the only writer, so after this every write lands at the end.
+        file.seek(SeekFrom::End(0))?;
 
         Ok((
             Wal { file, sync },
